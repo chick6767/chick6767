@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Аниме-кликер</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #FFB7C5; /* розовый фон */
+      color: #333;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none; /* нельзя выделять текст на всей странице */
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+
+    #currency-display, #score-display {
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    #clicker-area {
+      position: relative;
+      cursor: pointer;
+      width: 400px;
+      height: 500px;
+      overflow: hidden; /* чтобы сердечки не вылезали за края */
+    }
+
+    #anime-girl {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      pointer-events: none; /* клики ловит контейнер */
+      user-select: none;
+      -webkit-user-drag: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      transition: transform 0.1s ease;
+    }
+
+    /* Качание при клике */
+    #clicker-area.shaking #anime-girl {
+      transform: rotate(-5deg);
+    }
+    
+    #clicker-area.shaking-back #anime-girl {
+      transform: rotate(5deg);
+    }
+
+    .effect-number {
+      position: absolute;
+      pointer-events: none;
+      font-weight: bold;
+      color: #ffaa00;
+      font-size: 1.2rem;
+      animation: floatUp 1s ease-out forwards;
+      z-index: 10;
+    }
+
+    .heart {
+      position: absolute;
+      pointer-events: none;
+      font-size: 1.5rem;
+      animation: floatUpWithSpread 1s ease-out forwards;
+      z-index: 9;
+    }
+
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(-60px) scale(1.3); opacity: 0; }
+    }
+
+    @keyframes floatUpWithSpread {
+      0% { transform: translateY(0) translateX(0) scale(1); opacity: 1; }
+      100% {
+        transform: translateY(-80px) translateX(var(--tx, 0)) scale(1.4);
+        opacity: 0;
+      }
+    }
+
+    #shop {
+      margin-top: 2rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .upgrade-btn {
+      padding: 12px 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #fff;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      user-select: none;
+    }
+
+    .upgrade-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="currency-display">Валюта: 0</div>
+  <div id="score-display">Счёт: 0</div>
+
+  <!-- Область кликера -->
+  <div id="clicker-area">
+    <!-- ВСТАВЬ СВОЁ ИЗОБРАЖЕНИЕ СЮДА -->
+    <img id="anime-girl" src="C:\Users\balak\OneDrive\Рабочий стол\помойка2\02тян.png" alt="Аниме девочка" />
+    <!-- ------------------------------ -->
+  </div>
+
+  <div id="shop">
+    <button class="upgrade-btn" id="buy-x2" data-cost="20" data-multiplier="2">
+      ×2 (20 валюты)
+    </button>
+    <button class="upgrade-btn" id="buy-x5" data-cost="50" data-multiplier="5" disabled>
+      ×5 (50 валюты)
+    </button>
+    <button class="upgrade-btn" id="buy-x10" data-cost="100" data-multiplier="10" disabled>
+      ×10 (100 валюты)
+    </button>
+  </div>
+
+  <script>
+    const currencyDisplay = document.getElementById('currency-display');
+    const scoreDisplay = document.getElementById('score-display');
+    const clickerArea = document.getElementById('clicker-area');
+
+    const buyX2 = document.getElementById('buy-x2');
+    const buyX5 = document.getElementById('buy-x5');
+    const buyX10 = document.getElementById('buy-x10');
+
+    let currency = 0;
+    let score = 0;
+    let multiplier = 1;
+
+    function updateUI() {
+      currencyDisplay.textContent = `Валюта: ${currency}`;
+      scoreDisplay.textContent = `Счёт: ${score}`;
+
+      checkButtonState(buyX2);
+      checkButtonState(buyX5);
+      checkButtonState(buyX10);
+    }
+
+    function checkButtonState(btn) {
+      const cost = parseInt(btn.getAttribute('data-cost'), 10);
+      btn.disabled = currency < cost;
+    }
+
+    clickerArea.addEventListener('click', (e) => {
+      const earned = multiplier;
+      currency += earned;
+      score += earned;
+      updateUI();
+
+      // Качание картинки
+      clickerArea.classList.add('shaking');
+      setTimeout(() => {
+        clickerArea.classList.remove('shaking');
+        clickerArea.classList.add('shaking-back');
+      }, 50);
+      setTimeout(() => {
+        clickerArea.classList.remove('shaking-back');
+      }, 100);
+
+      // Эффект числа
+      const rect = clickerArea.getBoundingClientRect();
+      const x = e.clientX - rect.left - 15;
+      const y = e.clientY - rect.top - 20;
+
+      const effect = document.createElement('div');
+      effect.textContent = '+' + earned;
+      effect.className = 'effect-number';
+      effect.style.left = x + 'px';
+      effect.style.top = y + 'px';
+      clickerArea.appendChild(effect);
+
+      setTimeout(() => effect.remove(), 1000);
+
+      // Сердечки
+      for (let i = 0; i < 3; i++) {
+        const heart = document.createElement('div');
+        heart.textContent = '❤️';
+        heart.className = 'heart';
+        // Разброс сердечек
+        const tx = (Math.random() - 0.5) * 60; // влево/вправо
+        heart.style.setProperty('--tx', tx + 'px');
+        heart.style.left = x + 'px';
+        heart.style.top = y + 'px';
+        clickerArea.appendChild(heart);
+
+        setTimeout(() => heart.remove(), 1000);
+      }
+    });
+
+    function buyUpgrade(btn, newMultiplier, cost) {
+      if (currency >= cost) {
+        currency -= cost;
+        multiplier = newMultiplier;
+        btn.disabled = true;
+        updateUI();
+      }
+    }
+
+    buyX2.addEventListener('click', () => {
+      const cost = parseInt(buyX2.getAttribute('data-cost'), 10);
+      buyUpgrade(buyX2, 2, cost);
+    });
+
+    buyX5.addEventListener('click', () => {
+      const cost = parseInt(buyX5.getAttribute('data-cost'), 10);
+      buyUpgrade(buyX5, 5, cost);
+    });
+
+    buyX10.addEventListener('click', () => {
+      const cost = parseInt(buyX10.getAttribute('data-cost'), 10);
+      buyUpgrade(buyX10, 10, cost);
+    });
+
+    // Запрет контекстного меню (ПКМ)
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+  </script>
+</body>
+</html>
